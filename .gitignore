@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+
+# Python virtual environment
+virt/
+venv/
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node (if using Vite / React)
+node_modules/
+
+# OS files
+.DS_Store
+
