@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Scan to Attack - Honeypot Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a0a 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #ef4444;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #ef4444;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        #qrcode {
+            background: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .url-display {
+            background: #1a1a1f;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            word-break: break-all;
+            color: #4fb7b3;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            text-align: left;
+            background: rgba(79, 183, 179, 0.1);
+            border: 1px solid #4fb7b3;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .instructions h3 {
+            color: #4fb7b3;
+            margin-bottom: 10px;
+        }
+
+        .config-section {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .config-section label {
+            display: block;
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .config-section input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .config-section button {
+            margin-top: 10px;
+            padding: 12px 24px;
+            background: #ef4444;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .config-section button:hover {
+            background: #dc2626;
+        }
+
+        .warning {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            border-radius: 10px;
+            font-size: 11px;
+            color: #ef4444;
+        }
+
+        .print-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: #4fb7b3;
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .print-btn:hover {
+            background: #3da09c;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            .config-section,
+            .print-btn {
+                display: none;
+            }
+
+            .card {
+                border-color: #000;
+            }
+
+            h1,
+            .warning {
+                color: #000;
+            }
+
+            .subtitle,
+            .instructions {
+                color: #333;
+            }
+        }
+    </style>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+    <div class="card">
+        <h1>🔴 HONEYPOT ATTACK DEMO</h1>
+        <p class="subtitle">Scan QR Code to Launch Simulated Attacks</p>
+
+        <div class="config-section">
+            <label>Your Computer's IP Address</label>
+            <input type="text" id="ipInput" placeholder="192.168.1.100" value="">
+            <button onclick="generateQR()">Generate QR Code</button>
+        </div>
+
+        <div id="qrcode"></div>
+
+        <div class="url-display" id="urlDisplay">
+            Configure your IP above to generate QR code
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Instructions for Attackers:</h3>
+            1. Scan QR code with your phone camera<br>
+            2. Open the link in browser<br>
+            3. Click any attack button<br>
+            4. Watch the dashboard react! 🚨
+        </div>
+
+        <div class="warning">
+            ⚠️ EDUCATIONAL DEMO ONLY - Do not use on unauthorized systems
+        </div>
+
+        <button class="print-btn" onclick="window.print()">🖨️ Print This QR Code</button>
+    </div>
+
+    <script>
+        let qrcode = null;
+
+        function generateQR() {
+            const ip = document.getElementById('ipInput').value.trim();
+            if (!ip) {
+                alert('Please enter your IP address');
+                return;
+            }
+
+            const attackerUrl = `http://${ip}:5173/attacker.html`;
+
+            // Clear previous QR
+            document.getElementById('qrcode').innerHTML = '';
+
+            // Generate new QR
+            qrcode = new QRCode(document.getElementById('qrcode'), {
+                text: attackerUrl,
+                width: 200,
+                height: 200,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('urlDisplay').textContent = attackerUrl;
+        }
+
+        // Auto-detect IP hint
+        document.getElementById('ipInput').placeholder = 'Enter your IPv4 (run ipconfig)';
+    </script>
+</body>
+
+</html>
