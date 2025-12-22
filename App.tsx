@@ -13,6 +13,7 @@ import CustomCursor from './components/CustomCursor';
 import ThreatCard from './components/ArtistCard'; // Reused component structure
 import AIChat from './components/AIChat';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import WorldMap from './components/WorldMap';
 import AuthPage from './components/AuthPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Threat, NodeStatus } from './types';
@@ -606,6 +607,16 @@ const Dashboard: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* World Map Section */}
+      <section className="relative z-10 py-16 md:py-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-heading font-bold mb-8">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4fb7b3] to-[#a8fbd3]">Attack</span> Origins
+          </h2>
+          <WorldMap className="h-[400px]" />
         </div>
       </section>
 

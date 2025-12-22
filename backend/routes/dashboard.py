@@ -76,3 +76,41 @@ def stats():
     })
 
 
+@dashboard_bp.route('/api/attack-locations', methods=['GET'])
+def attack_locations():
+    """Get attack locations with coordinates for the world map"""
+    from utils.geoip import get_location
+    
+    # Severity mapping
+    severity_map = {
+        'SQL Injection': 'critical',
+        'Command Injection': 'critical', 
+        'XSS': 'high',
+        'Directory Traversal': 'high',
+        'Brute Force': 'medium',
+        'Reconnaissance': 'low',
+        'Suspicious Activity': 'medium'
+    }
+    
+    # Get recent attacks
+    attacks = AttackLog.query.order_by(AttackLog.timestamp.desc()).limit(100).all()
+    
+    locations = []
+    for attack in attacks:
+        # Get coordinates for the IP
+        loc = get_location(attack.ip_address)
+        
+        if loc['lat'] != 0 or loc['lon'] != 0:
+            locations.append({
+                'id': attack.id,
+                'lat': loc['lat'],
+                'lon': loc['lon'],
+                'country': attack.country,
+                'city': attack.city,
+                'attack_type': attack.attack_type,
+                'ip_address': attack.ip_address,
+                'timestamp': attack.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'severity': severity_map.get(attack.attack_type, 'medium')
+            })
+    
+    return jsonify(locations)

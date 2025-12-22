@@ -11,7 +11,13 @@ classifier = AttackClassifier()
 def log_attack(endpoint, method, payload=None):
     ip = request.remote_addr
     user_agent = request.headers.get('User-Agent')
-    country, city = get_location(ip)
+    
+    # Get location with coordinates
+    location = get_location(ip)
+    country = location["country"]
+    city = location["city"]
+    lat = location["lat"]
+    lon = location["lon"]
     
     # Classify attack
     attack_type = classifier.predict(payload)
@@ -29,8 +35,13 @@ def log_attack(endpoint, method, payload=None):
     db.session.add(log)
     db.session.commit()
     
+    # Include coordinates in SSE notification
+    log_dict = log.to_dict()
+    log_dict['lat'] = lat
+    log_dict['lon'] = lon
+    
     # Notify SSE stream
-    announcer.announce(f"data: {json.dumps(log.to_dict())}\n\n")
+    announcer.announce(f"data: {json.dumps(log_dict)}\n\n")
 
 @honeypot_bp.route('/login', methods=['GET', 'POST'])
 def login():
