@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 
 // Render.com Backend URL
 const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security.onrender.com';
+
+// Inactivity timeout (10 minutes in milliseconds)
+const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
 // Get API base URL based on environment
 const getApiBase = () => {
@@ -32,6 +35,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
     signup: (username: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
     logout: () => void;
+    resetInactivityTimer: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,11 +56,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Logout function
+    const logout = useCallback(() => {
+        setToken(null);
+        setUser(null);
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('authUser');
+
+        // Clear inactivity timer
+        if (inactivityTimerRef.current) {
+            clearTimeout(inactivityTimerRef.current);
+            inactivityTimerRef.current = null;
+        }
+    }, []);
+
+    // Reset inactivity timer
+    const resetInactivityTimer = useCallback(() => {
+        // Clear existing timer
+        if (inactivityTimerRef.current) {
+            clearTimeout(inactivityTimerRef.current);
+        }
+
+        // Only set timer if user is authenticated
+        if (token && user) {
+            inactivityTimerRef.current = setTimeout(() => {
+                console.log('Session expired due to inactivity');
+                alert('Your session has expired due to inactivity. Please log in again.');
+                logout();
+            }, INACTIVITY_TIMEOUT);
+        }
+    }, [token, user, logout]);
+
+    // Set up activity listeners
+    useEffect(() => {
+        if (!token || !user) return;
+
+        const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+
+        const handleActivity = () => {
+            resetInactivityTimer();
+        };
+
+        // Add event listeners
+        activityEvents.forEach(event => {
+            document.addEventListener(event, handleActivity);
+        });
+
+        // Start initial timer
+        resetInactivityTimer();
+
+        // Cleanup
+        return () => {
+            activityEvents.forEach(event => {
+                document.removeEventListener(event, handleActivity);
+            });
+            if (inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current);
+            }
+        };
+    }, [token, user, resetInactivityTimer]);
 
     // Check for existing token on mount
     useEffect(() => {
-        const storedToken = localStorage.getItem('authToken');
-        const storedUser = localStorage.getItem('authUser');
+        const storedToken = sessionStorage.getItem('authToken');
+        const storedUser = sessionStorage.getItem('authUser');
 
         if (storedToken && storedUser) {
             setToken(storedToken);
@@ -106,8 +171,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (data.success) {
                 setToken(data.token);
                 setUser(data.user);
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('authUser', JSON.stringify(data.user));
+                sessionStorage.setItem('authToken', data.token);
+                sessionStorage.setItem('authUser', JSON.stringify(data.user));
                 return { success: true, message: 'Login successful' };
             } else {
                 return { success: false, message: data.message || 'Login failed' };
@@ -133,8 +198,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (data.success) {
                 setToken(data.token);
                 setUser(data.user);
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('authUser', JSON.stringify(data.user));
+                sessionStorage.setItem('authToken', data.token);
+                sessionStorage.setItem('authUser', JSON.stringify(data.user));
                 return { success: true, message: 'Account created successfully' };
             } else {
                 return { success: false, message: data.message || 'Signup failed' };
@@ -145,13 +210,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
-    };
-
     return (
         <AuthContext.Provider value={{
             isAuthenticated: !!token && !!user,
@@ -160,7 +218,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             isLoading,
             login,
             signup,
-            logout
+            logout,
+            resetInactivityTimer
         }}>
             {children}
         </AuthContext.Provider>
