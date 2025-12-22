@@ -8,4 +8,5 @@ scikit-learn
 pandas
 numpy
 reportlab
+PyJWT
 gunicorn

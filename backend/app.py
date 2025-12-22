@@ -9,6 +9,7 @@ from models.log_entry import db
 from routes.honeypot import honeypot_bp
 from routes.dashboard import dashboard_bp
 from routes.reports import reports_bp
+from routes.auth import auth_bp, User
 from utils.sse import announcer
 
 load_dotenv()
@@ -25,6 +26,7 @@ db.init_app(app)
 app.register_blueprint(honeypot_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(reports_bp)
+app.register_blueprint(auth_bp)
 
 @app.route('/')
 def index():

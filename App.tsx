@@ -13,7 +13,7 @@ import CustomCursor from './components/CustomCursor';
 import ThreatCard from './components/ArtistCard'; // Reused component structure
 import AIChat from './components/AIChat';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
-import LoginPage from './components/LoginPage';
+import AuthPage from './components/AuthPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Threat, NodeStatus } from './types';
 import { fetchThreats, subscribeToLiveFeed, blockIP } from './services/api';
@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
       </AnimatePresence>
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 md:px-8 py-6 mix-blend-difference">
+      <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 md:px-8 py-6 bg-black/50 backdrop-blur-md">
         <div className="flex items-center gap-2 z-50">
           <Shield className="w-6 h-6 text-[#a8fbd3]" />
           <div className="font-heading text-xl md:text-2xl font-bold tracking-tighter text-white cursor-default">HONEYPOT</div>
@@ -311,8 +311,8 @@ const Dashboard: React.FC = () => {
 
         {/* User info and Logout */}
         <div className="hidden md:flex items-center gap-4">
-          <span className="text-xs text-gray-400 font-mono">
-            {user && `👤 ${user}`}
+          <span className="text-xs text-white font-mono">
+            {user && `👤 ${user.username}`}
           </span>
           <button
             onClick={logout}
@@ -903,8 +903,21 @@ const App: React.FC = () => {
 
 // Content that switches between login and dashboard
 const AppContent: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Dashboard /> : <LoginPage />;
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#4fb7b3]/30 border-t-[#4fb7b3] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400 font-mono text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <Dashboard /> : <AuthPage />;
 };
 
 export default App;
