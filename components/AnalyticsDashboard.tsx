@@ -27,10 +27,23 @@ const AnalyticsDashboard: React.FC = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
 
+    // Get backend URL based on environment
+    const getApiBase = () => {
+        const hostname = window.location.hostname;
+        if (hostname.includes('onrender.com') || hostname.includes('vercel.app')) {
+            return 'https://honeypot-in-a-box-computer-security.onrender.com';
+        }
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+            return `http://${hostname}:5000`;
+        }
+        return '';
+    };
+
     const fetchStats = useCallback(async () => {
         setIsRefreshing(true);
         try {
-            const res = await fetch('/api/stats');
+            const apiBase = getApiBase();
+            const res = await fetch(`${apiBase}/api/stats`);
             const data = await res.json();
             setStats(data);
             setLastUpdated(new Date());
@@ -85,7 +98,8 @@ const AnalyticsDashboard: React.FC = () => {
                         onClick={async () => {
                             setIsExporting(true);
                             try {
-                                const response = await fetch('/api/reports/generate', { method: 'POST' });
+                                const apiBase = getApiBase();
+                                const response = await fetch(`${apiBase}/api/reports/generate`, { method: 'POST' });
                                 if (response.ok) {
                                     const blob = await response.blob();
                                     const url = window.URL.createObjectURL(blob);
