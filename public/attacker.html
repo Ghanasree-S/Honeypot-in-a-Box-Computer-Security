@@ -209,9 +209,24 @@
         </div>
 
         <script>
-            // Auto-detect the target IP from the current page URL
+            // Render.com Backend URL
+            const RENDER_BACKEND = 'https://honeypot-in-a-box-computer-security.onrender.com';
+
+            // Auto-detect the target URL based on environment
             const currentHost = window.location.hostname;
-            const targetUrl = 'http://' + currentHost + ':5000';
+            let targetUrl;
+
+            if (currentHost.includes('onrender.com') || currentHost.includes('vercel.app')) {
+                // Production: Use Render backend
+                targetUrl = RENDER_BACKEND;
+            } else if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+                // Local network: Use same IP with port 5000
+                targetUrl = 'http://' + currentHost + ':5000';
+            } else {
+                // Local development
+                targetUrl = 'http://127.0.0.1:5000';
+            }
+
             document.getElementById('targetUrl').value = targetUrl;
         </script>
 

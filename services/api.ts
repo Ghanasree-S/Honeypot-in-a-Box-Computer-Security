@@ -5,14 +5,24 @@
 
 import { Threat } from '../types';
 
-// Dynamically detect backend URL - use same host with port 5000
+// Render.com Backend URL
+const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security.onrender.com';
+
+// Dynamically detect backend URL
 const getApiBase = () => {
     const hostname = window.location.hostname;
-    // If accessing via network, use that IP:5000 for backend
+
+    // Production: Use Render backend
+    if (hostname.includes('onrender.com') || hostname.includes('vercel.app')) {
+        return RENDER_BACKEND_URL;
+    }
+
+    // Local network access: use same IP with port 5000
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
         return `http://${hostname}:5000`;
     }
-    // For local development, use Vite proxy (empty string)
+
+    // Local development: use Vite proxy (empty string)
     return '';
 };
 
