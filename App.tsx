@@ -104,6 +104,7 @@ const Dashboard: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [attackAlert, setAttackAlert] = useState<Threat | null>(null);
   const [isAlertAcknowledged, setIsAlertAcknowledged] = useState(false);
+  const [isFlashingDisabled, setIsFlashingDisabled] = useState(false); // New state to completely disable flashing
 
   // Search and Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -264,9 +265,9 @@ const Dashboard: React.FC = () => {
       <FluidBackground />
       <AIChat />
 
-      {/* RED ALERT - Flashing screen border when attack detected (stops when acknowledged) */}
+      {/* RED ALERT - Flashing screen border when attack detected (stops when acknowledged or disabled) */}
       <AnimatePresence>
-        {attackAlert && !isAlertAcknowledged && (
+        {attackAlert && !isAlertAcknowledged && !isFlashingDisabled && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: [0.3, 0.7, 0.3] }}
@@ -623,7 +624,7 @@ const Dashboard: React.FC = () => {
       <footer className="relative z-10 border-t border-white/10 py-12 md:py-16 bg-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
           <div>
-            <div className="font-heading text-3xl md:text-4xl font-bold tracking-tighter mb-4 text-white">LUMINA SEC</div>
+            <div className="font-heading text-3xl md:text-4xl font-bold tracking-tighter mb-4 text-white">HONEYPOT SEC</div>
             <div className="flex gap-2 text-xs font-mono text-gray-400">
               <span>System Version 2.0.4-beta</span>
             </div>
@@ -874,14 +875,28 @@ const Dashboard: React.FC = () => {
 
               {/* Action */}
               <div className="p-4 border-t border-red-500/30 space-y-2">
-                {/* Acknowledge button - stops red flashing */}
-                {!isAlertAcknowledged && (
+                {/* Acknowledge button - stops red flashing permanently */}
+                {!isFlashingDisabled ? (
                   <button
-                    onClick={() => setIsAlertAcknowledged(true)}
+                    onClick={() => {
+                      setIsAlertAcknowledged(true);
+                      setIsFlashingDisabled(true); // Permanently disable flashing until re-enabled
+                    }}
                     className="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold uppercase tracking-wider text-xs rounded transition-colors flex items-center justify-center gap-2"
                   >
                     <Bell className="w-4 h-4" />
-                    Acknowledge (Stop Flashing)
+                    Stop Flashing
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsFlashingDisabled(false);
+                      setIsAlertAcknowledged(false);
+                    }}
+                    className="w-full py-2 bg-green-600 hover:bg-green-500 text-white font-bold uppercase tracking-wider text-xs rounded transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Bell className="w-4 h-4" />
+                    Re-enable Flashing Alerts
                   </button>
                 )}
                 <button
