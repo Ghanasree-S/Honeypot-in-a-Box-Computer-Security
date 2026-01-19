@@ -142,29 +142,61 @@ const Dashboard: React.FC = () => {
   // Fetch initial threats and subscribe to SSE
   useEffect(() => {
     // Fetch existing threats
-    fetchThreats(20).then((threats) => {
-      if (threats.length > 0) {
-        setLiveThreats(threats);
-        setIsBackendConnected(true);
-      }
-    });
+    const loadThreats = () => {
+      fetchThreats(20).then((threats) => {
+        if (threats.length > 0) {
+          // Check for new threats
+          setLiveThreats((prev) => {
+            const newThreats = threats.filter(t => !prev.some(p => p.id === t.id));
+            if (newThreats.length > 0 && prev.length > 0) {
+              // New attack detected! Show notification
+              const latestNew = newThreats[0];
+              setAttackAlert(latestNew);
+              setIsAlertAcknowledged(false);
 
-    // Subscribe to live feed
+              // Play alert sound
+              try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAgAYMDr2rN3PwUAbNbjp4BZJQCC2M+TaDouAGe+xIVWRCUAgr29fVZGPC0AiLi0dVhGPi4AgbKpdldLPjEAf6ymcVhLQjIAfqahblxOQTQAf6Kdb1xQQTQAfqKcc19RQjYAfaCacF9UQzYAfZ+Yb2FWRDgAfZ6WbmJXRTgAfZ2UbmNYRjkAfJySbmRaRzoAfJuQbWVbRzsAfJmObGZcSD0AfJiMa2ddSD4AfJeKamheSkAAepaJaWlfS0IAeZWHaGpgTEMAeZSFZ2thTUQAeJODZmxiTkYAeJKBZm1jT0kAd5CAZm5kUEkAd49+ZW9lUUoAdo5+aHBnUkwAdY18ZnFoU00AdIx6ZnJpVE4Adot4ZnNqVU8Ac4p2ZXRrVlAAcolyZXVsV1EAcYhwZXZtWFIAcIdxaHdvWVMAb4ZuZnhwWlQAboVsZnlxW1UAboRqZnpyXFYAbYNqaHtyXVgAbIJoZ3xzXlkAa4FmZ31zX1oAaoBlZ350YFsAaX9jZ391YVwAaX5jant1Yl4AaH1hant2Y18AZ3xfZ3x3ZGAAZntfant3ZWEAZnpeant4ZmIAZXldaHx4Z2MAZXhcZ3x5aGQAZHdbZ3x6aWYAY3ZaZ3x7amcAY3VZZ3x8a2gAYnRYZ3x8bGkAYnNXZ3x9bWoAYXJWZ318bmwAYHFVZ319b20AYHBUaH19cG4AX29Uan1+cXAAXm5TaX1/cnEAXm1San1/c3IAXWxRan2Ac3QAXGFRAN4AXWtQan2BdHUAXGpPan2CdXcAW2lOan2DdngAW2hNan2DeHkAWmdMan2EeXsAWWZLan2Fe3wAWWVKan2GfH0AWGRJan2HfX8AWGNIan2If4AAV2JHan2JgIEAV2FGan2KgYMAVmBFan2Lg4QAVl9Ean2MhIYAVV5Dan2NhYcAVV1Ca36OhogAVFxBa36Ph4oAVFtAbH6QiYwAU1o/bH6RiY0AU1k+bX6Si48AUlg9bX6TjJAAUlc8bn6UjZIAUVY7bn6VjpMAUVU6b36WkJUAUFQ5b36XkZYAUFM4cH6YkpgAT1I3cH6ZlJoATlE2cX6alpwATlA1cX6bl50ATVB1cn6bnJ8ATU8zcn6cnqAATE4ycn6dnqIAS00xc36fn6QATE8yc36goaYAS0wxc36hoacAS0wwd36io6kASkswd36jpKoASksveH6lpawASksueH6mp60ASUoveH6nqK8ASEkteH6oqbEAR0kseX6pq7MAR0greX6rrLUARkgqeX6srrYARkgqen6tr7gARkgpen6vsLoARUcpen6wsrwARUcoe36ysr4ARUYne36ztcAAREYme36zuMIAREUle360ucQAQ0Ule361u8YAQ0Qke3+2vcgAQ0Qje3+3vsoBBkAAAA==');
+                audio.volume = 0.3;
+                audio.play().catch(() => { });
+              } catch (e) { }
+
+              // Update node under attack status
+              setNodes((prevNodes) => {
+                const updated = [...prevNodes];
+                updated[0].status = 'under_attack';
+                updated[0].requests += 1;
+                return updated;
+              });
+            }
+            return threats;
+          });
+          setIsBackendConnected(true);
+        }
+      });
+    };
+
+    // Initial load
+    loadThreats();
+
+    // Poll every 5 seconds (fallback for SSE not working on Render)
+    const pollInterval = setInterval(loadThreats, 5000);
+
+    // Also try SSE (works on local, might not on Render)
     const unsubscribe = subscribeToLiveFeed(
       (newThreat) => {
         setLiveThreats((prev) => {
-          // Avoid duplicates and keep max 50 threats
           const exists = prev.some((t) => t.id === newThreat.id);
           if (exists) return prev;
           return [newThreat, ...prev].slice(0, 50);
         });
         setIsBackendConnected(true);
 
-        // Show attack alert notification and reset acknowledge state!
+        // Show attack alert notification
         setAttackAlert(newThreat);
         setIsAlertAcknowledged(false);
 
-        // Play alert sound (browser notification)
+        // Play alert sound
         try {
           const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAgAYMDr2rN3PwUAbNbjp4BZJQCC2M+TaDouAGe+xIVWRCUAgr29fVZGPC0AiLi0dVhGPi4AgbKpdldLPjEAf6ymcVhLQjIAfqahblxOQTQAf6Kdb1xQQTQAfqKcc19RQjYAfaCacF9UQzYAfZ+Yb2FWRDgAfZ6WbmJXRTgAfZ2UbmNYRjkAfJySbmRaRzoAfJuQbWVbRzsAfJmObGZcSD0AfJiMa2ddSD4AfJeKamheSkAAepaJaWlfS0IAeZWHaGpgTEMAeZSFZ2thTUQAeJODZmxiTkYAeJKBZm1jT0kAd5CAZm5kUEkAd49+ZW9lUUoAdo5+aHBnUkwAdY18ZnFoU00AdIx6ZnJpVE4Adot4ZnNqVU8Ac4p2ZXRrVlAAcolyZXVsV1EAcYhwZXZtWFIAcIdxaHdvWVMAb4ZuZnhwWlQAboVsZnlxW1UAboRqZnpyXFYAbYNqaHtyXVgAbIJoZ3xzXlkAa4FmZ31zX1oAaoBlZ350YFsAaX9jZ391YVwAaX5jant1Yl4AaH1hant2Y18AZ3xfZ3x3ZGAAZntfant3ZWEAZnpeant4ZmIAZXldaHx4Z2MAZXhcZ3x5aGQAZHdbZ3x6aWYAY3ZaZ3x7amcAY3VZZ3x8a2gAYnRYZ3x8bGkAYnNXZ3x9bWoAYXJWZ318bmwAYHFVZ319b20AYHBUaH19cG4AX29Uan1+cXAAXm5TaX1/cnEAXm1San1/c3IAXWxRan2Ac3QAXGFRAN4AXWtQan2BdHUAXGpPan2CdXcAW2lOan2DdngAW2hNan2DeHkAWmdMan2EeXsAWWZLan2Fe3wAWWVKan2GfH0AWGRJan2HfX8AWGNIan2If4AAV2JHan2JgIEAV2FGan2KgYMAVmBFan2Lg4QAVl9Ean2MhIYAVV5Dan2NhYcAVV1Ca36OhogAVFxBa36Ph4oAVFtAbH6QiYwAU1o/bH6RiY0AU1k+bX6Si48AUlg9bX6TjJAAUlc8bn6UjZIAUVY7bn6VjpMAUVU6b36WkJUAUFQ5b36XkZYAUFM4cH6YkpgAT1I3cH6ZlJoATlE2cX6alpwATlA1cX6bl50ATVB1cn6bnJ8ATU8zcn6cnqAATE4ycn6dnqIAS00xc36fn6QATE8yc36goaYAS0wxc36hoacAS0wwd36io6kASkswd36jpKoASksveH6lpawASksueH6mp60ASUoveH6nqK8ASEkteH6oqbEAR0kseX6pq7MAR0greX6rrLUARkgqeX6srrYARkgqen6tr7gARkgpen6vsLoARUcpen6wsrwARUcoe36ysr4ARUYne36ztcAAREYme36zuMIAREUle360ucQAQ0Ule361u8YAQ0Qke3+2vcgAQ0Qje3+3vsoBBkAAAA==');
           audio.volume = 0.3;
@@ -180,11 +212,14 @@ const Dashboard: React.FC = () => {
         });
       },
       () => {
-        console.log('SSE connection closed, using mock data');
+        console.log('SSE connection closed, using polling');
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      clearInterval(pollInterval);
+      unsubscribe();
+    };
   }, []);
 
   // Toast auto-dismiss
