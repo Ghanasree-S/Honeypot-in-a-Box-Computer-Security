@@ -11,6 +11,7 @@ class AttackClassifier:
         self.load_model()
         
         # Pattern-based detection as fallback
+        # ORDER MATTERS! Check Directory Traversal before Command Injection
         self.attack_patterns = {
             'SQL Injection': [
                 r"('\s*(OR|AND)\s*'?\d*\s*=\s*'?\d*)",  # ' OR '1'='1
@@ -27,18 +28,20 @@ class AttackClassifier:
                 r"(on\w+\s*=)",  # onclick=, onerror=, etc.
                 r"(<img[^>]+onerror)",  # <img onerror=
                 r"(alert\s*\(|confirm\s*\(|prompt\s*\()",
+                r"(document\.cookie|document\.location)",
+            ],
+            'Directory Traversal': [
+                r"(\.\./|\.\.\\)",  # ../
+                r"(%2e%2e/|%2e%2e\\)",  # encoded ../
+                r"(\.\..*/etc/passwd)",  # ../../../etc/passwd pattern
             ],
             'Command Injection': [
                 r"(;\s*cat\s|;\s*ls\s|;\s*wget\s|;\s*curl\s)",
                 r"(\|\s*cat\s|\|\s*ls\s)",  # pipe commands
                 r"(`[^`]+`)",  # backtick execution
                 r"(\$\([^)]+\))",  # $(command)
-                r"(/etc/passwd|/etc/shadow)",
-            ],
-            'Directory Traversal': [
-                r"(\.\./|\.\.\\)",  # ../
-                r"(%2e%2e/|%2e%2e\\)",  # encoded ../
-                r"(/etc/passwd|/etc/shadow|/windows/system32)",
+                r"(rm\s+-rf|;\s*rm\s)",  # rm commands
+                r"(/etc/passwd|/etc/shadow)",  # sensitive files (after traversal check)
             ],
             'Brute Force': [
                 r"(admin|root|administrator|password|123456|qwerty)",
@@ -96,5 +99,3 @@ class AttackClassifier:
             return "Brute Force"
         
         return "Suspicious Activity"
-        
-
