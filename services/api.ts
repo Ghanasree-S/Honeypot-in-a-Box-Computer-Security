@@ -6,7 +6,7 @@
 import { Threat } from '../types';
 
 // Render.com Backend URL
-const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security-w267.onrender.com';
+const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security.onrender.com';
 
 // Dynamically detect backend URL
 const getApiBase = () => {

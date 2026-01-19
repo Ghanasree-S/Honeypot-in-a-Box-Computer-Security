@@ -31,7 +31,7 @@ const AnalyticsDashboard: React.FC = () => {
     const getApiBase = () => {
         const hostname = window.location.hostname;
         if (hostname.includes('onrender.com') || hostname.includes('vercel.app')) {
-            return 'https://honeypot-in-a-box-computer-security-w267.onrender.com';
+            return 'https://honeypot-in-a-box-computer-security.onrender.com';
         }
         if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
             return `http://${hostname}:5000`;
