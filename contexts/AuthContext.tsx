@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 
 // Render.com Backend URL
-const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security.onrender.com';
+const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security-w267.onrender.com';
 
 // Inactivity timeout (10 minutes in milliseconds)
 const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes

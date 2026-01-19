@@ -5,7 +5,7 @@ import { Globe } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 // Render.com Backend URL
-const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security.onrender.com';
+const RENDER_BACKEND_URL = 'https://honeypot-in-a-box-computer-security-w267.onrender.com';
 
 const getApiBase = () => {
     const hostname = window.location.hostname;
