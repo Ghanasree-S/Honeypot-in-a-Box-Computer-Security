@@ -96,4 +96,5 @@ class AttackClassifier:
             return "Brute Force"
         
         return "Suspicious Activity"
+        
 
