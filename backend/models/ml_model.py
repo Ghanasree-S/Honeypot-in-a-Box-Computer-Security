@@ -9,44 +9,6 @@ class AttackClassifier:
         self.model = None
         self.vectorizer = None
         self.load_model()
-        
-        # Pattern-based detection as fallback
-        # ORDER MATTERS! Check Directory Traversal before Command Injection
-        self.attack_patterns = {
-            'SQL Injection': [
-                r"('\s*(OR|AND)\s*'?\d*\s*=\s*'?\d*)",  # ' OR '1'='1
-                r"('?\s*OR\s+1\s*=\s*1)",  # OR 1=1
-                r"(UNION\s+SELECT)",  # UNION SELECT
-                r"(-{2}|#|/\*)",  # SQL comments
-                r"(DROP\s+TABLE|DELETE\s+FROM|INSERT\s+INTO)",
-                r"(SELECT\s+.+\s+FROM)",
-                r"(;\s*SELECT|;\s*DROP|;\s*DELETE)",
-            ],
-            'XSS': [
-                r"(<script[^>]*>)",  # <script> tags
-                r"(javascript\s*:)",  # javascript:
-                r"(on\w+\s*=)",  # onclick=, onerror=, etc.
-                r"(<img[^>]+onerror)",  # <img onerror=
-                r"(alert\s*\(|confirm\s*\(|prompt\s*\()",
-                r"(document\.cookie|document\.location)",
-            ],
-            'Directory Traversal': [
-                r"(\.\./|\.\.\\)",  # ../
-                r"(%2e%2e/|%2e%2e\\)",  # encoded ../
-                r"(\.\..*/etc/passwd)",  # ../../../etc/passwd pattern
-            ],
-            'Command Injection': [
-                r"(;\s*cat\s|;\s*ls\s|;\s*wget\s|;\s*curl\s)",
-                r"(\|\s*cat\s|\|\s*ls\s)",  # pipe commands
-                r"(`[^`]+`)",  # backtick execution
-                r"(\$\([^)]+\))",  # $(command)
-                r"(rm\s+-rf|;\s*rm\s)",  # rm commands
-                r"(/etc/passwd|/etc/shadow)",  # sensitive files (after traversal check)
-            ],
-            'Brute Force': [
-                r"(admin|root|administrator|password|123456|qwerty)",
-            ],
-        }
 
     def load_model(self):
         try:
@@ -66,12 +28,99 @@ class AttackClassifier:
         if not payload:
             return None
         
-        payload_lower = payload.lower()
+        # SQL Injection patterns
+        sql_patterns = [
+            r"('\s*(OR|AND)\s*'?\d*\s*=\s*'?\d*)",
+            r"('?\s*OR\s+1\s*=\s*1)",
+            r"(UNION\s+SELECT)",
+            r"(DROP\s+TABLE|DELETE\s+FROM|INSERT\s+INTO)",
+            r"(SELECT\s+.+\s+FROM)",
+            r"('--)",
+        ]
+        for pattern in sql_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "SQL Injection"
         
-        for attack_type, patterns in self.attack_patterns.items():
-            for pattern in patterns:
-                if re.search(pattern, payload_lower, re.IGNORECASE):
-                    return attack_type
+        # XSS patterns
+        xss_patterns = [
+            r"(<script[^>]*>)",
+            r"(javascript\s*:)",
+            r"(on\w+\s*=)",
+            r"(alert\s*\(|confirm\s*\(|prompt\s*\()",
+            r"(document\.cookie|document\.location)",
+        ]
+        for pattern in xss_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "XSS"
+        
+        # Directory Traversal patterns
+        dir_patterns = [
+            r"(\.\./|\.\.\\)",
+            r"(%2e%2e/|%2e%2e\\)",
+            r"(\.\..*etc.*passwd)",
+        ]
+        for pattern in dir_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "Directory Traversal"
+        
+        # Command Injection patterns
+        cmd_patterns = [
+            r"(;\s*cat\s|;\s*ls\s|;\s*wget\s|;\s*curl\s)",
+            r"(\|\s*cat\s|\|\s*ls\s)",
+            r"(`[^`]+`)",
+            r"(\$\([^)]+\))",
+            r"(rm\s+-rf)",
+            r"(--no-preserve-root)",
+        ]
+        for pattern in cmd_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "Command Injection"
+        
+        # Brute Force patterns
+        brute_patterns = [
+            r"(admin|root|administrator|user|test|guest)\s*.*\s*(password|pass|123|admin|root|qwerty|letmein)",
+            r"(multiple\s*login|brute\s*force|credential\s*stuff)",
+            r"(password\d+|pass\d+|admin\d+)",
+        ]
+        for pattern in brute_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "Brute Force"
+        
+        # SSRF (Server-Side Request Forgery) patterns
+        ssrf_patterns = [
+            r"(https?://(127\.0\.0\.1|localhost|0\.0\.0\.0|10\.\d|172\.(1[6-9]|2\d|3[01])|192\.168))",
+            r"(https?://169\.254\.169\.254)",  # AWS metadata
+            r"(file:///|gopher://|dict://|ftp://127)",
+            r"(metadata\.google|metadata\.azure)",
+            r"(@localhost|@127\.0\.0\.1)",
+        ]
+        for pattern in ssrf_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "SSRF"
+        
+        # File Upload Attack patterns
+        upload_patterns = [
+            r"\.(php|jsp|asp|aspx|exe|sh|bat|cmd|py|pl|cgi)\s*$",
+            r"(multipart/form-data.*\.(php|exe|sh|jsp))",
+            r"(Content-Disposition.*filename.*\.(php|exe|sh|jsp|asp))",
+            r"(webshell|shell\.php|c99|r57|b374k)",
+            r"(<\?php|<%@\s*page)",
+        ]
+        for pattern in upload_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "File Upload Attack"
+        
+        # LDAP Injection patterns
+        ldap_patterns = [
+            r"(\*\)\(&|\)\(\||\)\(!\s*\()",
+            r"(objectClass=\*|objectCategory=\*)",
+            r"(\)\(uid=\*\)|\)\(cn=\*\))",
+            r"(ldap://|ldaps://|LDAP\s+injection)",
+            r"(\x00|\x0a|\x0d).*=(.*\*)",  # null byte injection in LDAP
+        ]
+        for pattern in ldap_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                return "LDAP Injection"
         
         return None
 
@@ -79,23 +128,22 @@ class AttackClassifier:
         if not payload:
             return "Reconnaissance"
         
-        # First try pattern-based detection (more reliable)
-        pattern_result = self.pattern_based_detect(payload)
-        if pattern_result:
-            return pattern_result
-        
-        # Then try ML model
+        # FIRST: Try ML model (it was trained with 97% accuracy!)
         if self.model and self.vectorizer:
             try:
                 features = self.vectorizer.transform([payload])
                 prediction = self.model.predict(features)[0]
                 if prediction and prediction != "Normal":
+                    print(f"ML classified: {prediction}")
                     return prediction
             except Exception as e:
-                print(f"Prediction Error: {e}")
+                print(f"ML Prediction Error: {e}")
         
-        # Default based on content analysis
-        if any(word in payload.lower() for word in ['password', 'pass', 'admin', 'root', 'user']):
-            return "Brute Force"
+        # FALLBACK: Pattern-based detection if ML fails
+        pattern_result = self.pattern_based_detect(payload)
+        if pattern_result:
+            print(f"Pattern classified: {pattern_result}")
+            return pattern_result
         
+        # Default
         return "Suspicious Activity"

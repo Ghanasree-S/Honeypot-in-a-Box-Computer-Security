@@ -36,6 +36,10 @@ const THREAT_IMAGES: Record<string, string> = {
     'Directory Traversal': 'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?q=80&w=1000&auto=format&fit=crop',
     'Port Scan': 'https://images.unsplash.com/photo-1544197150-b99a580bbcbf?q=80&w=1000&auto=format&fit=crop',
     'Command Injection': 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?q=80&w=1000&auto=format&fit=crop',
+    'SSRF': 'https://images.unsplash.com/photo-1558494949-efc02570fbc9?q=80&w=1000&auto=format&fit=crop',
+    'File Upload Attack': 'https://images.unsplash.com/photo-1544197150-b99a580bbcbf?q=80&w=1000&auto=format&fit=crop',
+    'LDAP Injection': 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?q=80&w=1000&auto=format&fit=crop',
+    'Reconnaissance': 'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?q=80&w=1000&auto=format&fit=crop',
     'default': 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop'
 };
 
@@ -44,10 +48,15 @@ const getSeverity = (attackType: string): 'low' | 'medium' | 'high' | 'critical'
     const severityMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
         'SQL Injection': 'critical',
         'Command Injection': 'critical',
+        'SSRF': 'critical',
+        'LDAP Injection': 'critical',
         'XSS': 'high',
         'Directory Traversal': 'high',
+        'File Upload Attack': 'high',
         'Brute Force': 'medium',
+        'Suspicious Activity': 'medium',
         'Port Scan': 'low',
+        'Reconnaissance': 'low',
         'Normal': 'low'
     };
     return severityMap[attackType] || 'medium';

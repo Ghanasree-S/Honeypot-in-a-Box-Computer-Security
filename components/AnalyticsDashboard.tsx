@@ -17,7 +17,7 @@ interface Stats {
     severity_stats?: { critical: number; high: number; medium: number; low: number };
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ef4444'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ef4444', '#f43f5e', '#06b6d4', '#d946ef', '#14b8a6'];
 const SEVERITY_COLORS: Record<string, string> = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e' };
 const REFRESH_INTERVAL = 30000;
 

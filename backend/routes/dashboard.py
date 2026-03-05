@@ -56,6 +56,9 @@ def stats():
         'XSS': 'high',
         'Directory Traversal': 'high',
         'Brute Force': 'medium',
+        'SSRF': 'critical',
+        'File Upload Attack': 'high',
+        'LDAP Injection': 'critical',
         'Reconnaissance': 'low',
         'Suspicious Activity': 'medium'
     }
@@ -88,6 +91,9 @@ def attack_locations():
         'XSS': 'high',
         'Directory Traversal': 'high',
         'Brute Force': 'medium',
+        'SSRF': 'critical',
+        'File Upload Attack': 'high',
+        'LDAP Injection': 'critical',
         'Reconnaissance': 'low',
         'Suspicious Activity': 'medium'
     }

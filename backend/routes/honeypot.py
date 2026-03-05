@@ -95,6 +95,52 @@ def fake_env():
     fake_env_content = "DB_HOST=localhost\nDB_USER=root\nDB_PASS=password123\nSECRET_KEY=supersecretkey"
     return Response(fake_env_content, mimetype='text/plain')
 
+@honeypot_bp.route('/api/login', methods=['POST'])
+def brute_force_login():
+    data = request.get_json(silent=True) or request.form
+    username = data.get('username', '')
+    password = data.get('password', '')
+    payload = f"Brute Force Attempt - User: {username}, Pass: {password}"
+    log_attack('/api/login', 'POST', payload)
+    return jsonify({"error": "Invalid credentials", "attempts_remaining": 2}), 401
+
+@honeypot_bp.route('/api/internal/proxy', methods=['GET', 'POST'])
+def ssrf_proxy():
+    target = request.args.get('url') or (request.get_json(silent=True) or {}).get('url', '')
+    payload = f"SSRF Attempt - Target URL: {target}" if target else "SSRF probe on internal proxy endpoint"
+    log_attack('/api/internal/proxy', request.method, payload)
+    return jsonify({"error": "Proxy service unavailable", "internal": True}), 503
+
+@honeypot_bp.route('/upload', methods=['GET', 'POST'])
+@honeypot_bp.route('/api/upload', methods=['GET', 'POST'])
+def file_upload():
+    if request.method == 'POST':
+        filename = ''
+        if request.files:
+            f = list(request.files.values())[0] if request.files else None
+            filename = f.filename if f else 'unknown'
+        else:
+            data = request.get_json(silent=True) or {}
+            filename = data.get('filename', 'unknown')
+        payload = f"File Upload Attack - Filename: {filename}"
+        log_attack(request.path, 'POST', payload)
+        return jsonify({"error": "Upload failed", "message": "File type not allowed"}), 400
+    
+    log_attack(request.path, 'GET', "Probing upload endpoint")
+    return jsonify({"message": "Upload endpoint", "allowed_types": [".jpg", ".png", ".pdf"]}), 200
+
+@honeypot_bp.route('/api/ldap/search', methods=['GET', 'POST'])
+@honeypot_bp.route('/api/directory/lookup', methods=['GET', 'POST'])
+def ldap_search():
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or request.form
+        query = data.get('query', data.get('username', ''))
+    else:
+        query = request.args.get('query', request.args.get('q', ''))
+    payload = f"LDAP Injection Attempt - Query: {query}" if query else "LDAP endpoint probe"
+    log_attack(request.path, request.method, payload)
+    return jsonify({"error": "Directory service unavailable"}), 503
+
 # ============ Dashboard API Endpoints ============
 
 @honeypot_bp.route('/api/threats', methods=['GET'])
@@ -198,13 +244,16 @@ def get_alert_history():
     severity_map = {
         'SQL Injection': 'critical',
         'Command Injection': 'critical',
+        'SSRF': 'critical',
+        'LDAP Injection': 'critical',
         'XSS': 'high',
         'Directory Traversal': 'high',
+        'File Upload Attack': 'high',
         'Brute Force': 'medium'
     }
     
     critical_logs = AttackLog.query.filter(
-        AttackLog.attack_type.in_(['SQL Injection', 'Command Injection'])
+        AttackLog.attack_type.in_(['SQL Injection', 'Command Injection', 'SSRF', 'LDAP Injection'])
     ).order_by(AttackLog.timestamp.desc()).limit(20).all()
     
     return jsonify({
